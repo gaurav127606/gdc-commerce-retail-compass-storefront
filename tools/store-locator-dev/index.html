@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Store Locator — local dev harness (mock data)</title>
+  <!-- The block's own styles -->
+  <link rel="stylesheet" href="../../blocks/store-locator/store-locator.css" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; color: #1a1a1a; }
+    .harness-note { background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px;
+      padding: 10px 14px; margin-bottom: 20px; font-size: 14px; }
+    h1 { font-size: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Store Locator — local dev harness</h1>
+  <div class="harness-note">
+    ⚠️ Mock mode: the App Builder <code>map-geocode</code> and <code>store-locator-search</code> actions
+    are stubbed with sample data here, so you can build the UI before the real actions are deployed.
+    Try searching any address (e.g. "Dallas") — the mock returns the same set of stores regardless of input.
+  </div>
+
+  <!-- This is the block container. In a real EDS page this <div class="store-locator"> is generated
+       from an authored "Store Locator" block; here we create it by hand so the block can decorate it. -->
+  <div class="store-locator block"></div>
+
+  <script type="module">
+    // 1) Config the block reads for its actions base URL (value is irrelevant in mock mode).
+    window.retailCompassConfig = {
+      actionsBaseUrl: 'https://mock.local/api/v1/web/retailer-storelocator',
+    };
+
+    // 2) Mock the two App Builder actions the block calls, so nothing real needs to be deployed.
+    const MOCK_STORES = [
+      { id: '1', name: '7-Eleven Downtown Dallas', street: '1200 Main St', city: 'Dallas',
+        region: 'TX', postcode: '75201', lat: 32.7808, lng: -96.7970, distanceKm: 1.2,
+        enabled: true,
+        weeklyHours: [
+          { dayOfWeek: 0, closed: false, open: '06:00', close: '23:00' },
+          { dayOfWeek: 1, closed: false, open: '05:00', close: '00:00' },
+          { dayOfWeek: 2, closed: false, open: '05:00', close: '00:00' },
+          { dayOfWeek: 3, closed: false, open: '05:00', close: '00:00' },
+          { dayOfWeek: 4, closed: false, open: '05:00', close: '00:00' },
+          { dayOfWeek: 5, closed: false, open: '05:00', close: '00:00' },
+          { dayOfWeek: 6, closed: false, open: '06:00', close: '23:00' },
+        ], specialHours: [] },
+      { id: '2', name: '7-Eleven Deep Ellum', street: '2800 Elm St', city: 'Dallas',
+        region: 'TX', postcode: '75226', lat: 32.7842, lng: -96.7833, distanceKm: 2.7,
+        enabled: true,
+        weeklyHours: [
+          { dayOfWeek: 0, closed: false, open: '07:00', close: '22:00' },
+          { dayOfWeek: 1, closed: false, open: '06:00', close: '23:00' },
+          { dayOfWeek: 2, closed: false, open: '06:00', close: '23:00' },
+          { dayOfWeek: 3, closed: false, open: '06:00', close: '23:00' },
+          { dayOfWeek: 4, closed: false, open: '06:00', close: '23:00' },
+          { dayOfWeek: 5, closed: false, open: '06:00', close: '23:00' },
+          { dayOfWeek: 6, closed: false, open: '07:00', close: '22:00' },
+        ], specialHours: [] },
+      { id: '3', name: '7-Eleven Uptown', street: '3100 McKinney Ave', city: 'Dallas',
+        region: 'TX', postcode: '75204', lat: 32.7987, lng: -96.8025, distanceKm: 4.1,
+        enabled: true, weeklyHours: [], specialHours: [] },
+    ];
+
+    const realFetch = window.fetch.bind(window);
+    window.fetch = async (url, opts) => {
+      const u = String(url);
+      if (u.includes('/map-geocode')) {
+        return new Response(JSON.stringify({
+          lat: 32.7808, lng: -96.7970, formattedAddress: 'Dallas, TX, USA', provider: 'mock',
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (u.includes('/store-locator-search')) {
+        return new Response(JSON.stringify({
+          retailers: MOCK_STORES, count: MOCK_STORES.length,
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return realFetch(url, opts);
+    };
+
+    // 3) Load the block and decorate our container, exactly like EDS would at runtime.
+    const { default: decorate } = await import('../../blocks/store-locator/store-locator.js');
+    await decorate(document.querySelector('.store-locator.block'));
+  </script>
+</body>
+</html>
